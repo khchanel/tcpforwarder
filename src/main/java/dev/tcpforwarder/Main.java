@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class Main {
     public static void main(String[] args) {
@@ -48,7 +49,7 @@ public class Main {
             byte[] buffer = new byte[1024];
             int bytesRead;
 
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
+            while (!sourceSocket.isClosed() && (bytesRead = inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
                 outputStream.flush();
             }
@@ -56,8 +57,19 @@ public class Main {
             sourceSocket.close();
             destinationSocket.close();
 
+        } catch (SocketException e) {
+            if ("Socket closed".equals(e.getMessage())) {
+                System.out.println("Connection closed by remote host.");
+            } else {
+                e.printStackTrace();
+            }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            try {
+                sourceSocket.close();
+                destinationSocket.close();
+            } catch (IOException ignored) {}
         }
     }
 }
