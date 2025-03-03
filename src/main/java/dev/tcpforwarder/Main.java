@@ -6,9 +6,16 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Main {
+
+    private static final int THREAD_POOL_SIZE = 20;
+    private static volatile boolean running = true;
+
     public static void main(String[] args) {
+
         if (args.length != 3) {
             System.err.println("Usage: java TcpForwarder <incomingPort> <targetHost> <targetPort>");
             System.exit(1);
@@ -17,26 +24,43 @@ public class Main {
         int incomingPort = Integer.parseInt(args[0]);
         String targetHost = args[1];
         int targetPort = Integer.parseInt(args[2]);
+        ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-        try {
-            ServerSocket serverSocket = new ServerSocket(incomingPort);
+        try (ServerSocket serverSocket = new ServerSocket(incomingPort)){
             System.out.println("TCP Port Forward started. Listening on port " + incomingPort);
 
-            while (true) {
-                Socket incomingSocket = serverSocket.accept();
-                System.out.println("Incoming connection from " + incomingSocket.getInetAddress());
+            // Handle shutdown gracefully
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                System.out.println("Shutting down TCP Forwarder...");
+                running = false;
+                threadPool.shutdown();
+                try {
+                    serverSocket.close();
+                } catch (IOException e) {
+                    System.err.println("Error closing server socket: " + e.getMessage());
+                }
+            }));
 
-                Socket targetSocket = new Socket(targetHost,targetPort);
-                System.out.println("Connecting to target host " + targetHost + ":" + targetPort);
+            while (running) {
+                try {
+                    Socket incomingSocket = serverSocket.accept();
+                    System.out.println("Incoming connection from " + incomingSocket.getInetAddress());
 
-                Thread forwarderThread = new Thread(() -> forwardData(incomingSocket, targetSocket));
-                Thread reverseForwarderThread = new Thread(() -> forwardData(targetSocket, incomingSocket));
+                    Socket targetSocket = new Socket(targetHost,targetPort);
+                    System.out.println("Connecting to target host " + targetHost + ":" + targetPort);
 
-                forwarderThread.start();
-                reverseForwarderThread.start();
+                    threadPool.submit(() -> forwardData(incomingSocket, targetSocket));
+                    threadPool.submit(() -> forwardData(targetSocket, incomingSocket));
+
+                } catch (IOException e) {
+                    if(running) {
+                        System.err.println("Failed to accept incoming connection: " + e.getMessage());
+                    }
+                }
             }
 
-        } catch (IOException e) {
+        } catch (Exception e) {
+            System.err.println("Failed to start server: " + e.getMessage());
             e.printStackTrace();
         }
     }
