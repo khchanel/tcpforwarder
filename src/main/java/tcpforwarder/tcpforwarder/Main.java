@@ -1,4 +1,4 @@
-package dev.tcpforwarder;
+package tcpforwarder.tcpforwarder;
 
 import java.io.IOException;
 import java.io.InputStream;
