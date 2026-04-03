@@ -1,0 +1,8 @@
+target/
+frontend/node_modules/
+frontend/.cache/
+frontend/build/
+.git/
+*.md
+.idea/
+.settings/
