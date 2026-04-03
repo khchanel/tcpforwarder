@@ -39,8 +39,9 @@ public class RuleListener {
 
     public void runAcceptLoop() {
         while (accepting) {
+            Socket clientSocket = null;
             try {
-                Socket clientSocket = serverSocket.accept();
+                clientSocket = serverSocket.accept();
                 log.debug("Incoming connection from {} on port {}", clientSocket.getInetAddress(), rule.getListenPort());
 
                 Socket targetSocket = new Socket(rule.getTargetHost(), rule.getTargetPort());
@@ -56,7 +57,13 @@ public class RuleListener {
 
             } catch (IOException e) {
                 if (accepting) {
-                    log.warn("Error accepting connection on port {}: {}", rule.getListenPort(), e.getMessage());
+                    String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                    log.warn("Error on port {} → {}:{}: {}", rule.getListenPort(), rule.getTargetHost(), rule.getTargetPort(), msg);
+                    ruleStats.getOrCreate(rule.getId()).recordError(msg);
+                    // close the client socket if we failed after accepting but before creating the session
+                    if (clientSocket != null && !clientSocket.isClosed()) {
+                        try { clientSocket.close(); } catch (IOException ignored) {}
+                    }
                 }
             }
         }

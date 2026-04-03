@@ -1,19 +1,24 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import client from '../api/client';
-import { ForwardingRule, RuleRequest } from '../types';
+import { ForwardingRule, RuleRequest, RuleStat } from '../types';
 
 const emptyForm: RuleRequest = { name: '', listenPort: 0, targetHost: '', targetPort: 0, enabled: true };
 
 export default function RulesPage() {
   const [rules, setRules] = useState<ForwardingRule[]>([]);
+  const [stats, setStats] = useState<Record<string, RuleStat>>({});
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<RuleRequest>(emptyForm);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const res = await client.get<ForwardingRule[]>('/rules');
-    setRules(res.data);
+    const [rulesRes, statsRes] = await Promise.all([
+      client.get<ForwardingRule[]>('/rules'),
+      client.get<Record<string, RuleStat>>('/stats'),
+    ]);
+    setRules(rulesRes.data);
+    setStats(statsRes.data);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -92,23 +97,42 @@ export default function RulesPage() {
           </tr>
         </thead>
         <tbody>
-          {rules.map(r => (
-            <tr key={r.id} style={styles.tr}>
-              <td style={styles.td}>{r.name}</td>
-              <td style={styles.td}>{r.listenPort}</td>
-              <td style={styles.td}>{r.targetHost}:{r.targetPort}</td>
-              <td style={styles.td}>
-                <span style={{ ...styles.badge, background: r.enabled ? '#d1fae5' : '#fee2e2', color: r.enabled ? '#065f46' : '#991b1b' }}>
-                  {r.enabled ? 'Active' : 'Disabled'}
-                </span>
-              </td>
-              <td style={styles.td}>
-                <button style={styles.actionBtn} onClick={() => toggleEnabled(r)}>{r.enabled ? 'Disable' : 'Enable'}</button>
-                <button style={styles.actionBtn} onClick={() => openEdit(r)}>Edit</button>
-                <button style={{ ...styles.actionBtn, color: '#e53e3e' }} onClick={() => handleDelete(r.id)}>Delete</button>
-              </td>
-            </tr>
-          ))}
+          {rules.map(r => {
+            const stat = stats[r.id];
+            const hasError = stat && (stat.connectionErrors ?? 0) > 0;
+            return (
+              <React.Fragment key={r.id}>
+                <tr style={styles.tr}>
+                  <td style={styles.td}>{r.name}</td>
+                  <td style={styles.td}>{r.listenPort}</td>
+                  <td style={styles.td}>{r.targetHost}:{r.targetPort}</td>
+                  <td style={styles.td}>
+                    <span style={{ ...styles.badge, background: r.enabled ? '#d1fae5' : '#fee2e2', color: r.enabled ? '#065f46' : '#991b1b' }}>
+                      {r.enabled ? 'Active' : 'Disabled'}
+                    </span>
+                    {hasError && r.enabled && (
+                      <span style={styles.errorBadge} title={`${stat.connectionErrors} error(s). Last: ${stat.lastError}`}>
+                        ⚠ {stat.connectionErrors} error{stat.connectionErrors !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </td>
+                  <td style={styles.td}>
+                    <button style={styles.actionBtn} onClick={() => toggleEnabled(r)}>{r.enabled ? 'Disable' : 'Enable'}</button>
+                    <button style={styles.actionBtn} onClick={() => openEdit(r)}>Edit</button>
+                    <button style={{ ...styles.actionBtn, color: '#e53e3e' }} onClick={() => handleDelete(r.id)}>Delete</button>
+                  </td>
+                </tr>
+                {hasError && r.enabled && (
+                  <tr style={{ background: '#fffbeb' }}>
+                    <td colSpan={5} style={styles.errorRow}>
+                      Last error: {stat.lastError}
+                      {stat.lastErrorAt && <span style={styles.errorTime}> — {new Date(stat.lastErrorAt).toLocaleTimeString()}</span>}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
           {rules.length === 0 && (
             <tr><td colSpan={5} style={{ ...styles.td, textAlign: 'center', color: '#999' }}>No rules configured. Add one to get started.</td></tr>
           )}
@@ -136,5 +160,8 @@ const styles: Record<string, React.CSSProperties> = {
   tr: { borderBottom: '1px solid #f1f5f9' },
   td: { padding: '12px 12px', fontSize: 14 },
   badge: { padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  errorBadge: { marginLeft: 8, padding: '2px 8px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: '#fef3c7', color: '#92400e', cursor: 'default' },
+  errorRow: { padding: '6px 12px', fontSize: 12, color: '#92400e', borderBottom: '1px solid #fde68a' },
+  errorTime: { color: '#b45309' },
   actionBtn: { marginRight: 8, padding: '4px 10px', fontSize: 13, border: '1px solid #d1d5db', borderRadius: 4, background: '#fff', cursor: 'pointer' },
 };

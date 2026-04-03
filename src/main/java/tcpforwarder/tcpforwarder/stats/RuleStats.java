@@ -34,7 +34,16 @@ public class RuleStats {
         public final AtomicLong totalBytesOut = new AtomicLong(0);
         public final AtomicLong totalConnections = new AtomicLong(0);
         public final AtomicLong activeConnections = new AtomicLong(0);
+        public final AtomicLong connectionErrors = new AtomicLong(0);
         public volatile Instant lastConnectedAt;
+        public volatile String lastError;
+        public volatile Instant lastErrorAt;
+
+        public void recordError(String message) {
+            connectionErrors.incrementAndGet();
+            lastError = message;
+            lastErrorAt = Instant.now();
+        }
 
         public Map<String, Object> toMap() {
             Map<String, Object> m = new HashMap<>();
@@ -42,7 +51,10 @@ public class RuleStats {
             m.put("totalBytesOut", totalBytesOut.get());
             m.put("totalConnections", totalConnections.get());
             m.put("activeConnections", activeConnections.get());
+            m.put("connectionErrors", connectionErrors.get());
             m.put("lastConnectedAt", lastConnectedAt);
+            m.put("lastError", lastError);
+            m.put("lastErrorAt", lastErrorAt);
             return m;
         }
     }

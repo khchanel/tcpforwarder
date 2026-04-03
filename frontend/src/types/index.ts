@@ -33,7 +33,10 @@ export interface RuleStat {
   totalBytesOut: number;
   totalConnections: number;
   activeConnections: number;
+  connectionErrors: number;
   lastConnectedAt: string | null;
+  lastError: string | null;
+  lastErrorAt: string | null;
 }
 
 export interface AuditEntry {
