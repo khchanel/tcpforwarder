@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -34,6 +35,7 @@ public class ConnectionSession {
     private final RuleStats ruleStats;
     private final AuditLogger auditLogger;
     private final Consumer<String> onEnd;
+    private final AtomicBoolean ended = new AtomicBoolean(false);
 
     public ConnectionSession(Socket clientSocket, Socket targetSocket, ForwardingRule rule,
                              RuleStats ruleStats, AuditLogger auditLogger, Consumer<String> onEnd) {
@@ -86,8 +88,14 @@ public class ConnectionSession {
     }
 
     private void onSessionEnd() {
+        // Guard: both pipe threads call this on completion — only run once
+        if (!ended.compareAndSet(false, true)) return;
+
         long durationMs = Instant.now().toEpochMilli() - startTime.toEpochMilli();
-        ruleStats.getOrCreate(rule.getId()).activeConnections.decrementAndGet();
+        RuleStats.StatEntry stat = ruleStats.getOrCreate(rule.getId());
+        stat.activeConnections.decrementAndGet();
+        stat.totalBytesIn.addAndGet(bytesIn.get());
+        stat.totalBytesOut.addAndGet(bytesOut.get());
         auditLogger.logDisconnect(rule, clientIp, sessionId, bytesIn.get(), bytesOut.get(), durationMs);
         onEnd.accept(sessionId);
     }
