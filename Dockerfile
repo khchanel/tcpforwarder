@@ -1,5 +1,5 @@
 # Stage 1: Build (Maven + Node via frontend-maven-plugin)
-FROM maven:3.9.6-eclipse-temurin-11 AS builder
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 WORKDIR /build
 
 # Cache Maven dependencies first
@@ -12,7 +12,7 @@ COPY frontend ./frontend
 RUN mvn package -DskipTests -q
 
 # Stage 2: Runtime (JRE only)
-FROM eclipse-temurin:11-jre-jammy
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
 COPY --from=builder /build/target/tcpforwarder-*.jar app.jar
