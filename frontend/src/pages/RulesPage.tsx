@@ -13,12 +13,16 @@ export default function RulesPage() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const [rulesRes, statsRes] = await Promise.all([
-      client.get<ForwardingRule[]>('/rules'),
-      client.get<Record<string, RuleStat>>('/stats'),
-    ]);
-    setRules(rulesRes.data);
-    setStats(statsRes.data);
+    try {
+      const [rulesRes, statsRes] = await Promise.all([
+        client.get<ForwardingRule[]>('/rules'),
+        client.get<Record<string, RuleStat>>('/stats'),
+      ]);
+      setRules(rulesRes.data);
+      setStats(statsRes.data);
+    } catch (err: any) {
+      setError(err.response?.data?.error ?? 'Failed to load rules');
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -68,16 +72,16 @@ export default function RulesPage() {
           <h3 style={styles.formTitle}>{editingId ? 'Edit Rule' : 'New Rule'}</h3>
           <form onSubmit={handleSubmit}>
             <div style={styles.grid}>
-              <label style={styles.label}>Name</label>
-              <input style={styles.input} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-              <label style={styles.label}>Listen Port</label>
-              <input style={styles.input} type="number" min={1} max={65535} value={form.listenPort || ''} onChange={e => setForm({ ...form, listenPort: +e.target.value })} required />
-              <label style={styles.label}>Target Host</label>
-              <input style={styles.input} value={form.targetHost} onChange={e => setForm({ ...form, targetHost: e.target.value })} required />
-              <label style={styles.label}>Target Port</label>
-              <input style={styles.input} type="number" min={1} max={65535} value={form.targetPort || ''} onChange={e => setForm({ ...form, targetPort: +e.target.value })} required />
-              <label style={styles.label}>Enabled</label>
-              <input type="checkbox" checked={form.enabled} onChange={e => setForm({ ...form, enabled: e.target.checked })} />
+              <label htmlFor="name" style={styles.label}>Name</label>
+              <input id="name" style={styles.input} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+              <label htmlFor="listenPort" style={styles.label}>Listen Port</label>
+              <input id="listenPort" style={styles.input} type="number" min={1} max={65535} value={form.listenPort || ''} onChange={e => setForm({ ...form, listenPort: +e.target.value })} required />
+              <label htmlFor="targetHost" style={styles.label}>Target Host</label>
+              <input id="targetHost" style={styles.input} value={form.targetHost} onChange={e => setForm({ ...form, targetHost: e.target.value })} required />
+              <label htmlFor="targetPort" style={styles.label}>Target Port</label>
+              <input id="targetPort" style={styles.input} type="number" min={1} max={65535} value={form.targetPort || ''} onChange={e => setForm({ ...form, targetPort: +e.target.value })} required />
+              <label htmlFor="enabled" style={styles.label}>Enabled</label>
+              <input id="enabled" type="checkbox" checked={form.enabled} onChange={e => setForm({ ...form, enabled: e.target.checked })} />
             </div>
             {error && <p style={styles.error}>{error}</p>}
             <div style={styles.formActions}>
