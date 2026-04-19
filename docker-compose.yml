@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  tcpforwarder:
+    build: .
+    container_name: tcp-forwarder
+    ports:
+      - "8080:8080"
+      # IMPORTANT: Add your forwarding ports here.
+      # Example: If you have a rule listening on 8000, add:
+      # - "8000:8000"
+    environment:
+      - FORWARDER_API_KEY=changeme
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
