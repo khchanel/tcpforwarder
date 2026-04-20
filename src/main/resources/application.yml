@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+forwarder:
+  api-key: changeme
+  rules-file: ./rules.yml
+  audit-log-file: ./logs/audit.log
+
+logging:
+  config: classpath:logback-spring.xml

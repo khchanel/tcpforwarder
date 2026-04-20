@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  tcpforwarder:
+    build: .
+    network_mode: host  # Access all host ports directly
+    container_name: tcp-forwarder
+    # the app needs dynamic port mapping - alternative maybe to use port range
+    #ports:
+      #- "8080:8080"
+      #- "10000-19999:10000:19999"   # range for forwarding rules
+    environment:
+      - FORWARDER_API_KEY=${FORWARDER_API_KEY:-changeme}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
