@@ -21,7 +21,8 @@ COPY --from=builder /build/target/tcpforwarder-*.jar app.jar
 VOLUME /app/data
 VOLUME /app/logs
 
-ENV FORWARDER_API_KEY=changeme
+# Do not set secret as ENV here in the Dockerfile; it should be passed at runtime via -e or --env-file
+#ENV FORWARDER_API_KEY=changeme
 ENV FORWARDER_RULES_FILE=/app/data/rules.yml
 ENV FORWARDER_AUDIT_LOG_FILE=/app/logs/audit.log
 
