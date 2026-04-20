@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tcpforwarder.tcpforwarder.audit.AuditLogger;
+import tcpforwarder.tcpforwarder.model.ConnectionSnapshot;
 import tcpforwarder.tcpforwarder.model.ForwardingRule;
 import tcpforwarder.tcpforwarder.persistence.RuleRepository;
 import tcpforwarder.tcpforwarder.stats.RuleStats;
@@ -83,8 +84,8 @@ public class ForwardingEngine {
         return listeners.containsKey(ruleId);
     }
 
-    public List<Map<String, Object>> getActiveSessions() {
-        List<Map<String, Object>> result = new ArrayList<>();
+    public List<ConnectionSnapshot> getActiveSessions() {
+        List<ConnectionSnapshot> result = new ArrayList<>();
         listeners.values().forEach(listener ->
                 listener.getActiveSessions().forEach(session -> result.add(session.toSnapshot()))
         );

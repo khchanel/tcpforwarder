@@ -3,6 +3,7 @@ package tcpforwarder.tcpforwarder.engine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tcpforwarder.tcpforwarder.audit.AuditLogger;
+import tcpforwarder.tcpforwarder.model.ConnectionSnapshot;
 import tcpforwarder.tcpforwarder.model.ForwardingRule;
 import tcpforwarder.tcpforwarder.stats.RuleStats;
 
@@ -111,16 +112,16 @@ public class ConnectionSession {
         }
     }
 
-    public Map<String, Object> toSnapshot() {
-        Map<String, Object> m = new HashMap<>();
-        m.put("sessionId", sessionId);
-        m.put("ruleId", rule.getId());
-        m.put("ruleName", rule.getName());
-        m.put("clientIp", clientIp);
-        m.put("bytesIn", bytesIn.get());
-        m.put("bytesOut", bytesOut.get());
-        m.put("startTime", startTime.toString());
-        m.put("durationMs", Instant.now().toEpochMilli() - startTime.toEpochMilli());
-        return m;
+    public ConnectionSnapshot toSnapshot() {
+        return new ConnectionSnapshot(
+                sessionId,
+                rule.getId(),
+                rule.getName(),
+                clientIp,
+                bytesIn.get(),
+                bytesOut.get(),
+                startTime,
+                Instant.now().toEpochMilli() - startTime.toEpochMilli()
+        );
     }
 }

@@ -3,6 +3,7 @@ package tcpforwarder.tcpforwarder.web;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tcpforwarder.tcpforwarder.engine.ForwardingEngine;
+import tcpforwarder.tcpforwarder.model.ConnectionSnapshot;
 import tcpforwarder.tcpforwarder.stats.RuleStats;
 
 import java.util.HashMap;
@@ -38,7 +39,7 @@ public class StatsController {
     }
 
     @GetMapping("/connections")
-    public List<Map<String, Object>> connections() {
+    public List<ConnectionSnapshot> connections() {
         return engine.getActiveSessions();
     }
 }
